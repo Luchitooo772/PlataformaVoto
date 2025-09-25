@@ -3,33 +3,39 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Candidato;
 use App\Models\Voto;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Candidato;
 
 class VotacionController extends Controller
 {
     public function index()
     {
-        $usuario = Auth::user();
-        if ($usuario->ha_votado) {
-            return redirect('/inicio')->with('msg', 'Ya has votado.');
-        }
+        $usuario = (object) [
+            'nombre' => 'Ludmila',
+            'ha_votado' => false
+        ];
 
         $candidatos = Candidato::all();
-        return view('votar', compact('candidatos'));
+        return view('votar', compact('usuario', 'candidatos'));
     }
 
     public function store(Request $request)
     {
-        $request->validate(['candidato' => 'required|exists:candidatos,id']);
+        // Validar que se haya seleccionado un candidato válido
+        $request->validate([
+            'candidato' => 'required|exists:candidatos,id'
+        ]);
 
-        Voto::create(['candidato_id' => $request->candidato]);
+        // Obtener el candidato
+        $candidato = Candidato::find($request->candidato);
 
-        $usuario = Auth::user();
-        $usuario->ha_votado = true;
-        $usuario->save();
+        // Guardar el voto con nombre y partido
+        Voto::create([
+            'nombre_candidato' => $candidato->nombre,
+            'partido_candidato' => $candidato->partido,
+        ]);
 
+        // Redirigir con mensaje de éxito
         return redirect('/inicio')->with('msg', 'Voto registrado con éxito.');
     }
 }
